@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Quote Generator</title>
     <style>
-        /* Existing CSS from previous task remains the same, plus small additions for new elements */
+        /* CSS from previous task */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -57,18 +57,43 @@
         #addQuoteForm button:hover {
             background-color: #0056b3;
         }
-        .data-management {
+        .data-management, .filter-controls {
             margin-top: 20px;
             padding: 10px;
             border-top: 1px solid #eee;
+        }
+        #filteredQuotesDisplay {
+            margin-top: 10px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+        #filteredQuotesDisplay ul {
+            list-style: none;
+            padding: 0;
+        }
+        #filteredQuotesDisplay li {
+            background: #eee;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <h1>Dynamic Quote Generator</h1>
     
-    <div id="quoteDisplay"></div>
-    <button id="newQuote">Show New Quote</button>
+    <div class="filter-controls">
+        <label for="categoryFilter">Filter by Category:</label>
+        <select id="categoryFilter" onchange="filterQuotes()">
+            <option value="all">All Categories</option>
+            </select>
+    </div>
+
+    <div id="filteredQuotesDisplay"></div>
+    
+    <button id="newQuote">Show Random Quote</button>
     
     <div id="formContainer"></div>
 
