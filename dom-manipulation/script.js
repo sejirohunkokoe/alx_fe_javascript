@@ -8,19 +8,9 @@ const newQuoteButton = document.getElementById('newQuote');
 const formContainer = document.getElementById('formContainer');
 const exportJsonButton = document.getElementById('exportJson');
 const categoryFilter = document.getElementById('categoryFilter');
-const syncStatusElement = document.createElement('div'); // New element for status/notifications
 
-// Append the new status element near the top
-document.addEventListener('DOMContentLoaded', () => {
-    const h1 = document.querySelector('h1');
-    if (h1) h1.after(syncStatusElement);
-    syncStatusElement.id = 'syncStatus';
-    syncStatusElement.style.margin = '10px 0';
-    syncStatusElement.style.padding = '5px';
-    syncStatusElement.style.border = '1px dashed #FF6565';
-    syncStatusElement.style.backgroundColor = '#ffe0e0';
-    syncStatusElement.style.display = 'none';
-});
+// Initialize sync status element (must be done on DOMContentLoaded, but declared globally)
+const syncStatusElement = document.createElement('div');
 
 
 // ======================================================================
@@ -83,58 +73,48 @@ async function fetchQuotesFromServer() {
         { text: "Server: The only constant in life is change.", category: "Philosophy" },
         { text: "Server: Conflict resolution requires communication.", category: "Life" }
     ];
-
-    // Note: In a real app, this would be an actual fetch call:
-    // const response = await fetch(SERVER_MOCK_URL);
-    // const data = await response.json();
     
     updateSyncStatus('Simulated server response received.');
     return serverQuotes;
 }
 
+/**
+ * Simulates posting a new quote to the server. (NEW MOCK POST IMPLEMENTATION)
+ * Returns a promise resolving after a simulated delay.
+ */
+async function postQuoteToServer(quoteObject) {
+    updateSyncStatus('Simulating POST of new quote to server...', false);
+    
+    // Simulate network delay and server processing (0.5 - 1.5 seconds)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500)); 
+    
+    updateSyncStatus('New quote successfully simulated POST to server.', false);
+    return { status: 201, quote: quoteObject };
+}
+
+
 // ======================================================================
 // Data Syncing and Conflict Resolution (Step 2 & 3)
 // ======================================================================
 
-/**
- * Syncs local data with server data using the Last-Write-Wins (Server Precedence) strategy.
- * @param {Array} serverData - The array of quotes received from the server.
- */
 function resolveConflicts(serverData) {
     const localQuotes = quotes;
-    let mergedQuotes = [...localQuotes];
     let resolvedCount = 0;
     
-    // Simplified LWW: Assume server data is always newer/correct and overwrite local
+    // Simplified LWW: Server Precedence
     
-    // 1. Identify unique texts in the local array
-    const localTexts = new Set(localQuotes.map(q => q.text));
-    
-    // 2. Add server quotes that do not exist locally
-    serverData.forEach(serverQuote => {
-        if (!localTexts.has(serverQuote.text)) {
-            mergedQuotes.push(serverQuote);
-            resolvedCount++;
-        }
-        // Note: For real LWW, you'd compare timestamps (which we mock here).
-        // Since server data takes precedence, if the texts match, we assume the server's version is better.
-    });
-
-    if (resolvedCount > 0 || localQuotes.length !== mergedQuotes.length) {
-        // If there were any changes or merges, the server's data is now the base.
-        quotes = serverData; // Simulating server precedence by making server data the new source.
+    if (localQuotes.length !== serverData.length || localQuotes.some((q, i) => q.text !== serverData[i].text)) {
+        // If there are any differences, overwrite local data with server data.
+        quotes = serverData; 
         
-        saveQuotes(); // Persist the new server-merged data locally
-        populateCategories(); // Update UI
-        updateSyncStatus(`Sync successful! ${resolvedCount} new item(s) merged from server.`, false);
+        saveQuotes(); 
+        populateCategories(); 
+        updateSyncStatus(`Sync successful! Data updated from server (Server Precedence applied).`, false);
     } else {
         updateSyncStatus('Sync successful! Local data was already up to date.');
     }
 }
 
-/**
- * Periodically checks the server for updates and syncs data.
- */
 async function syncData() {
     try {
         const serverQuotes = await fetchQuotesFromServer();
@@ -143,6 +123,7 @@ async function syncData() {
         updateSyncStatus(`Sync failed: ${error.message}. Using local data.`, true);
     }
 }
+
 
 // ======================================================================
 // UI Logic (Populate, Filter, Add, Export, Import)
@@ -212,7 +193,10 @@ function showRandomQuote() {
     alert(`Random Quote (${quote.category}): "${quote.text}"`);
 }
 
-function addQuote() {
+/**
+ * Adds a new quote, updates local storage, and attempts to POST to the server.
+ */
+async function addQuote() { // Made async to await postQuoteToServer
     const newQuoteText = document.getElementById('newQuoteText').value.trim();
     const newQuoteCategory = document.getElementById('newQuoteCategory').value.trim();
 
@@ -222,55 +206,25 @@ function addQuote() {
     }
 
     const newQuote = { text: newQuoteText, category: newQuoteCategory };
+    
+    // 1. Update local data
     quotes.push(newQuote);
+    saveQuotes(); 
 
-    saveQuotes(); // Update Local Storage
+    // 2. Simulate POST to server (NEW LOGIC)
+    try {
+        await postQuoteToServer(newQuote);
+    } catch (error) {
+        updateSyncStatus(`Warning: Failed to POST new quote. Local save successful. Error: ${error.message}`, true);
+    }
     
-    // Note: In a real app, we would also POST this new quote to the server here.
-    
+    // 3. Update UI
     populateCategories(); 
     filterQuotes(); 
 
     document.getElementById('newQuoteText').value = '';
     document.getElementById('newQuoteCategory').value = '';
-
-    updateSyncStatus('Quote added locally. Syncing soon...');
 }
-
-// JSON handling functions (Export/Import bodies remain the same)
-function exportToJson() { /* ... body remains the same ... */ }
-function importFromJsonFile(event) { /* ... body remains the same ... */ }
-function createAddQuoteForm() { /* ... body remains the same ... */ }
-
-
-// ======================================================================
-// Initialization
-// ======================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Load data from Local Storage first
-    loadQuotes(); 
-
-    // 2. Populate the filter dropdown and restore the last filter preference
-    populateCategories(); 
-    
-    // 3. Dynamically create the Add Quote form
-    createAddQuoteForm();
-
-    // 4. Attach event listeners
-    newQuoteButton.addEventListener('click', showRandomQuote);
-    exportJsonButton.addEventListener('click', exportToJson);
-    categoryFilter.addEventListener('change', filterQuotes);
-
-    // Step 1 & 2: Implement periodic data fetching/syncing (Every 30 seconds)
-    syncData(); // Run once immediately on load
-    setInterval(syncData, 30000); // Repeat sync every 30 seconds
-    
-    updateSyncStatus('Application initialized. Performing initial data sync.');
-});
-
-// Since the JSON functions were not provided in the prompt, include the boilerplate here 
-// to ensure the final script.js is complete and functional.
 
 function exportToJson() {
     const dataStr = JSON.stringify(quotes, null, 2);
@@ -328,3 +282,40 @@ function createAddQuoteForm() {
     formDiv.appendChild(addButton);
     formContainer.appendChild(formDiv);
 }
+
+
+// ======================================================================
+// Initialization
+// ======================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Setup sync status element
+    const h1 = document.querySelector('h1');
+    if (h1) h1.after(syncStatusElement);
+    syncStatusElement.id = 'syncStatus';
+    syncStatusElement.style.margin = '10px 0';
+    syncStatusElement.style.padding = '5px';
+    syncStatusElement.style.border = '1px dashed #FF6565';
+    syncStatusElement.style.backgroundColor = '#ffe0e0';
+    syncStatusElement.style.display = 'none';
+
+    // 1. Load data from Local Storage
+    loadQuotes(); 
+
+    // 2. Populate the filter dropdown and restore the last filter preference
+    populateCategories(); 
+    
+    // 3. Dynamically create the Add Quote form
+    createAddQuoteForm();
+
+    // 4. Attach event listeners
+    newQuoteButton.addEventListener('click', showRandomQuote);
+    exportJsonButton.addEventListener('click', exportToJson);
+    categoryFilter.addEventListener('change', filterQuotes);
+
+    // 5. Implement periodic data fetching/syncing
+    syncData(); // Run once immediately on load
+    setInterval(syncData, 30000); // Repeat sync every 30 seconds
+    
+    updateSyncStatus('Application initialized. Performing initial data sync.');
+});
