@@ -319,3 +319,30 @@ document.addEventListener('DOMContentLoaded', function() {
     
     updateSyncStatus('Application initialized. Performing initial data sync.');
 });
+/**
+ * Simulates posting a new quote to the server. 
+ * Returns a promise resolving after a simulated delay.
+ */
+async function postQuoteToServer(quoteObject) {
+    updateSyncStatus('Simulating POST of new quote to server...', false);
+    
+    // Simulate network delay and server processing (0.5 - 1.5 seconds)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500)); 
+
+    // --- REAL FETCH IMPLEMENTATION (FOR REFERENCE) ---
+    /*
+    // If this were a real server interaction, the request structure would include:
+    await fetch(SERVER_MOCK_URL, {
+        method: 'POST', // The HTTP method required for creation
+        headers: {
+            // Necessary header to tell the server the format of the data
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(quoteObject) // The JSON payload being sent
+    });
+    */
+    // --- END REAL FETCH IMPLEMENTATION ---
+    
+    updateSyncStatus('New quote successfully simulated POST to server.', false);
+    return { status: 201, quote: quoteObject };
+}
