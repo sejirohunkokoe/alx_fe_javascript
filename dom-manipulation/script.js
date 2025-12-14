@@ -2,26 +2,28 @@
 let quotes = []; 
 const SERVER_MOCK_URL = 'https://jsonplaceholder.typicode.com/posts'; // Mock API for simulation
 
-// Select DOM Elements
+// Select DOM Elements (Assuming they exist in index.html)
 const filteredQuotesDisplay = document.getElementById('filteredQuotesDisplay');
 const newQuoteButton = document.getElementById('newQuote');
 const formContainer = document.getElementById('formContainer');
 const exportJsonButton = document.getElementById('exportJson');
 const categoryFilter = document.getElementById('categoryFilter');
 
-// Initialize sync status element (must be done on DOMContentLoaded, but declared globally)
+// Initialize sync status element (will be appended to the DOM later)
 const syncStatusElement = document.createElement('div');
 
 
 // ======================================================================
-// Helper Functions for Web Storage & UI
+// Helper Functions for Web Storage & UI (Task 1 & 2)
 // ======================================================================
 
 function saveQuotes() {
+    // Task 1: Using Local Storage - Save quotes
     localStorage.setItem('quotes', JSON.stringify(quotes));
 }
 
 function loadQuotes() {
+    // Task 1: Using Local Storage - Load quotes
     const storedQuotes = localStorage.getItem('quotes');
     if (storedQuotes) {
         quotes = JSON.parse(storedQuotes);
@@ -29,17 +31,17 @@ function loadQuotes() {
 }
 
 function saveFilterPreference(category) {
+    // Task 2: Remember the Last Selected Filter
     localStorage.setItem('lastFilter', category);
 }
 
 function loadFilterPreference() {
+    // Task 2: Load the Last Selected Filter
     return localStorage.getItem('lastFilter') || 'all';
 }
 
 /**
- * Displays a status message to the user.
- * @param {string} message - The message to display.
- * @param {boolean} isError - If true, style as an error.
+ * Displays a status message to the user. (Task 3: UI Notifications)
  */
 function updateSyncStatus(message, isError = false) {
     syncStatusElement.textContent = message;
@@ -54,12 +56,11 @@ function updateSyncStatus(message, isError = false) {
 }
 
 // ======================================================================
-// Server Simulation (Step 1)
+// Server Simulation (Task 3)
 // ======================================================================
 
 /**
  * Simulates fetching quote data from a server.
- * Returns a promise resolving with a mock quotes array.
  */
 async function fetchQuotesFromServer() {
     updateSyncStatus('Simulating server check...');
@@ -67,7 +68,7 @@ async function fetchQuotesFromServer() {
     // Simulate network delay (1-2 seconds)
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 1000)); 
 
-    // Mock data that the server might hold (could be different from local)
+    // Mock data that the server might hold 
     const serverQuotes = [
         { text: "Server: Consistency is the highest virtue of programming.", category: "Technology" },
         { text: "Server: The only constant in life is change.", category: "Philosophy" },
@@ -79,14 +80,26 @@ async function fetchQuotesFromServer() {
 }
 
 /**
- * Simulates posting a new quote to the server. (NEW MOCK POST IMPLEMENTATION)
- * Returns a promise resolving after a simulated delay.
+ * Simulates posting a new quote to the server. (Task 3: Mock POST API)
  */
 async function postQuoteToServer(quoteObject) {
     updateSyncStatus('Simulating POST of new quote to server...', false);
     
     // Simulate network delay and server processing (0.5 - 1.5 seconds)
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500)); 
+
+    // --- REAL FETCH IMPLEMENTATION (FOR REFERENCE) ---
+    /*
+    // Demonstrates method, headers, and Content-Type for a real POST request:
+    await fetch(SERVER_MOCK_URL, {
+        method: 'POST', 
+        headers: {
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(quoteObject) 
+    });
+    */
+    // --- END REAL FETCH IMPLEMENTATION ---
     
     updateSyncStatus('New quote successfully simulated POST to server.', false);
     return { status: 201, quote: quoteObject };
@@ -94,27 +107,32 @@ async function postQuoteToServer(quoteObject) {
 
 
 // ======================================================================
-// Data Syncing and Conflict Resolution (Step 2 & 3)
+// Data Syncing and Conflict Resolution (Task 3)
 // ======================================================================
 
+/**
+ * Implements Conflict Resolution (Server Precedence).
+ */
 function resolveConflicts(serverData) {
     const localQuotes = quotes;
-    let resolvedCount = 0;
     
-    // Simplified LWW: Server Precedence
-    
+    // Check if the local data is significantly different from the server mock data
     if (localQuotes.length !== serverData.length || localQuotes.some((q, i) => q.text !== serverData[i].text)) {
-        // If there are any differences, overwrite local data with server data.
+        
+        // Server Precedence: Overwrite local data with server data.
         quotes = serverData; 
         
-        saveQuotes(); 
-        populateCategories(); 
+        saveQuotes(); // Update local storage with server data
+        populateCategories(); // Update UI
         updateSyncStatus(`Sync successful! Data updated from server (Server Precedence applied).`, false);
     } else {
         updateSyncStatus('Sync successful! Local data was already up to date.');
     }
 }
 
+/**
+ * Periodically checks the server for updates. (Task 3: Periodic Sync)
+ */
 async function syncData() {
     try {
         const serverQuotes = await fetchQuotesFromServer();
@@ -126,9 +144,12 @@ async function syncData() {
 
 
 // ======================================================================
-// UI Logic (Populate, Filter, Add, Export, Import)
+// Filtering and Display Logic (Task 2 & 0)
 // ======================================================================
 
+/**
+ * Task 2: Populate Categories Dynamically
+ */
 function populateCategories() {
     const categories = quotes.map(quote => quote.category);
     const uniqueCategories = ['all', ...new Set(categories)];
@@ -138,6 +159,7 @@ function populateCategories() {
     uniqueCategories.forEach(category => {
         const option = document.createElement('option');
         option.value = category;
+        // Capitalize the first letter for display
         option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
         categoryFilter.appendChild(option);
     });
@@ -148,6 +170,9 @@ function populateCategories() {
     filterQuotes();
 }
 
+/**
+ * Task 2: Filter Quotes Based on Selected Category
+ */
 function filterQuotes() {
     const selectedCategory = categoryFilter.value;
     saveFilterPreference(selectedCategory); 
@@ -174,6 +199,9 @@ function filterQuotes() {
     filteredQuotesDisplay.appendChild(ul);
 }
 
+/**
+ * Task 0: Show Random Quote (from filtered set)
+ */
 function showRandomQuote() {
     const selectedCategory = categoryFilter.value;
     let quotesToDrawFrom = quotes;
@@ -193,8 +221,13 @@ function showRandomQuote() {
     alert(`Random Quote (${quote.category}): "${quote.text}"`);
 }
 
+
+// ======================================================================
+// Quote Management (Task 0 & 1)
+// ======================================================================
+
 /**
- * Adds a new quote, updates local storage, and attempts to POST to the server.
+ * Task 0 & 3: Add new quote and attempt server POST.
  */
 async function addQuote() { // Made async to await postQuoteToServer
     const newQuoteText = document.getElementById('newQuoteText').value.trim();
@@ -211,14 +244,14 @@ async function addQuote() { // Made async to await postQuoteToServer
     quotes.push(newQuote);
     saveQuotes(); 
 
-    // 2. Simulate POST to server (NEW LOGIC)
+    // 2. Simulate POST to server
     try {
         await postQuoteToServer(newQuote);
     } catch (error) {
         updateSyncStatus(`Warning: Failed to POST new quote. Local save successful. Error: ${error.message}`, true);
     }
     
-    // 3. Update UI
+    // 3. Update UI (Task 2 & 3)
     populateCategories(); 
     filterQuotes(); 
 
@@ -226,6 +259,9 @@ async function addQuote() { // Made async to await postQuoteToServer
     document.getElementById('newQuoteCategory').value = '';
 }
 
+/**
+ * Task 1: Implement JSON Export
+ */
 function exportToJson() {
     const dataStr = JSON.stringify(quotes, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -240,6 +276,9 @@ function exportToJson() {
     updateSyncStatus('Quotes exported successfully!');
 }
 
+/**
+ * Task 1: Implement JSON Import
+ */
 function importFromJsonFile(event) {
     const fileReader = new FileReader();
     fileReader.onload = function(event) {
@@ -262,21 +301,31 @@ function importFromJsonFile(event) {
     }
 }
 
+/**
+ * Task 0: Create Add Quote Form Dynamically
+ */
 function createAddQuoteForm() {
-    if (document.getElementById('addQuoteForm')) return;
+    // Check if the form already exists
+    if (document.getElementById('addQuoteForm')) return; 
+    
     const formDiv = document.createElement('div');
     formDiv.id = 'addQuoteForm';
+    
     const textInput = document.createElement('input');
     textInput.id = 'newQuoteText';
     textInput.type = 'text';
     textInput.placeholder = 'Enter a new quote';
+    
     const categoryInput = document.createElement('input');
     categoryInput.id = 'newQuoteCategory';
     categoryInput.type = 'text';
     categoryInput.placeholder = 'Enter quote category';
+    
     const addButton = document.createElement('button');
     addButton.textContent = 'Add Quote';
+    // Event listener attached
     addButton.addEventListener('click', addQuote); 
+    
     formDiv.appendChild(textInput);
     formDiv.appendChild(categoryInput);
     formDiv.appendChild(addButton);
@@ -285,11 +334,11 @@ function createAddQuoteForm() {
 
 
 // ======================================================================
-// Initialization
+// Initialization (Runs when the DOM is ready)
 // ======================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Setup sync status element
+    // 1. Setup sync status element (Task 3)
     const h1 = document.querySelector('h1');
     if (h1) h1.after(syncStatusElement);
     syncStatusElement.id = 'syncStatus';
@@ -299,50 +348,23 @@ document.addEventListener('DOMContentLoaded', function() {
     syncStatusElement.style.backgroundColor = '#ffe0e0';
     syncStatusElement.style.display = 'none';
 
-    // 1. Load data from Local Storage
+    // 2. Load data from Local Storage (Task 1)
     loadQuotes(); 
 
-    // 2. Populate the filter dropdown and restore the last filter preference
+    // 3. Populate filter and restore preference (Task 2)
     populateCategories(); 
     
-    // 3. Dynamically create the Add Quote form
+    // 4. Create the Add Quote form (Task 0)
     createAddQuoteForm();
 
-    // 4. Attach event listeners
+    // 5. Attach event listeners
     newQuoteButton.addEventListener('click', showRandomQuote);
     exportJsonButton.addEventListener('click', exportToJson);
     categoryFilter.addEventListener('change', filterQuotes);
 
-    // 5. Implement periodic data fetching/syncing
+    // 6. Implement periodic data fetching/syncing (Task 3)
     syncData(); // Run once immediately on load
     setInterval(syncData, 30000); // Repeat sync every 30 seconds
     
     updateSyncStatus('Application initialized. Performing initial data sync.');
 });
-/**
- * Simulates posting a new quote to the server. 
- * Returns a promise resolving after a simulated delay.
- */
-async function postQuoteToServer(quoteObject) {
-    updateSyncStatus('Simulating POST of new quote to server...', false);
-    
-    // Simulate network delay and server processing (0.5 - 1.5 seconds)
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500)); 
-
-    // --- REAL FETCH IMPLEMENTATION (FOR REFERENCE) ---
-    /*
-    // If this were a real server interaction, the request structure would include:
-    await fetch(SERVER_MOCK_URL, {
-        method: 'POST', // The HTTP method required for creation
-        headers: {
-            // Necessary header to tell the server the format of the data
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify(quoteObject) // The JSON payload being sent
-    });
-    */
-    // --- END REAL FETCH IMPLEMENTATION ---
-    
-    updateSyncStatus('New quote successfully simulated POST to server.', false);
-    return { status: 201, quote: quoteObject };
-}
