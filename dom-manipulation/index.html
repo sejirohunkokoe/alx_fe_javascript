@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Quote Generator</title>
     <style>
+        /* Existing CSS from previous task remains the same, plus small additions for new elements */
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -36,11 +37,13 @@
             max-width: 400px;
             margin-left: auto;
             margin-right: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
         #addQuoteForm input, #addQuoteForm button {
             padding: 10px;
-            margin: 5px;
-            width: 90%;
+            width: 100%;
             box-sizing: border-box;
             border-radius: 4px;
             border: 1px solid #ddd;
@@ -51,14 +54,32 @@
             cursor: pointer;
             border: none;
         }
+        #addQuoteForm button:hover {
+            background-color: #0056b3;
+        }
+        .data-management {
+            margin-top: 20px;
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
     <h1>Dynamic Quote Generator</h1>
+    
     <div id="quoteDisplay"></div>
     <button id="newQuote">Show New Quote</button>
     
     <div id="formContainer"></div>
+
+    <div class="data-management">
+        <h3>Data Management</h3>
+        <button id="exportJson">Export Quotes (JSON)</button>
+        <label for="importFile" style="display: block; margin: 10px 0;">
+            Import Quotes (JSON):
+            <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
+        </label>
+    </div>
 
     <script src="script.js"></script>
 </body>
