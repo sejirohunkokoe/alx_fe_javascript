@@ -1,16 +1,14 @@
 // Initial quotes. This array holds the application state.
 let quotes = []; 
-const SERVER_MOCK_URL = 'https://jsonplaceholder.typicode.com/posts'; // Mock API for simulation
+const SERVER_MOCK_URL = 'https://jsonplaceholder.typicode.com/posts'; 
 
-// Select DOM Elements (Assuming they exist in index.html)
+// Select DOM Elements
 const filteredQuotesDisplay = document.getElementById('filteredQuotesDisplay');
 const newQuoteButton = document.getElementById('newQuote');
 const formContainer = document.getElementById('formContainer');
 const exportJsonButton = document.getElementById('exportJson');
 const categoryFilter = document.getElementById('categoryFilter');
-
-// Initialize sync status element (will be appended to the DOM later)
-const syncStatusElement = document.createElement('div');
+const syncStatusElement = document.createElement('div'); // UI element for Task 3 notifications
 
 
 // ======================================================================
@@ -56,7 +54,7 @@ function updateSyncStatus(message, isError = false) {
 }
 
 // ======================================================================
-// Server Simulation (Task 3)
+// Server Simulation (Task 3: Step 1)
 // ======================================================================
 
 /**
@@ -68,7 +66,7 @@ async function fetchQuotesFromServer() {
     // Simulate network delay (1-2 seconds)
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 1000)); 
 
-    // Mock data that the server might hold 
+    // Mock data that the server might hold (Different from local data to simulate updates)
     const serverQuotes = [
         { text: "Server: Consistency is the highest virtue of programming.", category: "Technology" },
         { text: "Server: The only constant in life is change.", category: "Philosophy" },
@@ -107,23 +105,23 @@ async function postQuoteToServer(quoteObject) {
 
 
 // ======================================================================
-// Data Syncing and Conflict Resolution (Task 3)
+// Data Syncing and Conflict Resolution (Task 3: Step 2 & 3)
 // ======================================================================
 
 /**
- * Implements Conflict Resolution (Server Precedence).
+ * Implements Conflict Resolution: Server's data takes precedence.
  */
 function resolveConflicts(serverData) {
     const localQuotes = quotes;
     
-    // Check if the local data is significantly different from the server mock data
+    // Simple check for data difference
     if (localQuotes.length !== serverData.length || localQuotes.some((q, i) => q.text !== serverData[i].text)) {
         
-        // Server Precedence: Overwrite local data with server data.
+        // Conflict Resolution: Overwrite local data with server data.
         quotes = serverData; 
         
-        saveQuotes(); // Update local storage with server data
-        populateCategories(); // Update UI
+        saveQuotes(); // Update local storage with the new server data
+        populateCategories(); // Update UI with new categories/filter results
         updateSyncStatus(`Sync successful! Data updated from server (Server Precedence applied).`, false);
     } else {
         updateSyncStatus('Sync successful! Local data was already up to date.');
@@ -144,7 +142,7 @@ async function syncData() {
 
 
 // ======================================================================
-// Filtering and Display Logic (Task 2 & 0)
+// Quote Management and UI Logic (Task 0, 1, & 2)
 // ======================================================================
 
 /**
@@ -159,7 +157,6 @@ function populateCategories() {
     uniqueCategories.forEach(category => {
         const option = document.createElement('option');
         option.value = category;
-        // Capitalize the first letter for display
         option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
         categoryFilter.appendChild(option);
     });
@@ -221,15 +218,10 @@ function showRandomQuote() {
     alert(`Random Quote (${quote.category}): "${quote.text}"`);
 }
 
-
-// ======================================================================
-// Quote Management (Task 0 & 1)
-// ======================================================================
-
 /**
- * Task 0 & 3: Add new quote and attempt server POST.
+ * Task 0 & 3: Add new quote, update local storage, and attempt server POST.
  */
-async function addQuote() { // Made async to await postQuoteToServer
+async function addQuote() { 
     const newQuoteText = document.getElementById('newQuoteText').value.trim();
     const newQuoteCategory = document.getElementById('newQuoteCategory').value.trim();
 
@@ -251,7 +243,7 @@ async function addQuote() { // Made async to await postQuoteToServer
         updateSyncStatus(`Warning: Failed to POST new quote. Local save successful. Error: ${error.message}`, true);
     }
     
-    // 3. Update UI (Task 2 & 3)
+    // 3. Update UI
     populateCategories(); 
     filterQuotes(); 
 
@@ -305,7 +297,6 @@ function importFromJsonFile(event) {
  * Task 0: Create Add Quote Form Dynamically
  */
 function createAddQuoteForm() {
-    // Check if the form already exists
     if (document.getElementById('addQuoteForm')) return; 
     
     const formDiv = document.createElement('div');
@@ -323,7 +314,6 @@ function createAddQuoteForm() {
     
     const addButton = document.createElement('button');
     addButton.textContent = 'Add Quote';
-    // Event listener attached
     addButton.addEventListener('click', addQuote); 
     
     formDiv.appendChild(textInput);
@@ -338,7 +328,7 @@ function createAddQuoteForm() {
 // ======================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Setup sync status element (Task 3)
+    // 1. Setup sync status element
     const h1 = document.querySelector('h1');
     if (h1) h1.after(syncStatusElement);
     syncStatusElement.id = 'syncStatus';
@@ -363,8 +353,8 @@ document.addEventListener('DOMContentLoaded', function() {
     categoryFilter.addEventListener('change', filterQuotes);
 
     // 6. Implement periodic data fetching/syncing (Task 3)
-    syncData(); // Run once immediately on load
-    setInterval(syncData, 30000); // Repeat sync every 30 seconds
+    syncData(); 
+    setInterval(syncData, 30000); 
     
     updateSyncStatus('Application initialized. Performing initial data sync.');
 });
